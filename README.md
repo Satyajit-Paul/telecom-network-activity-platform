@@ -30,7 +30,7 @@ flowchart LR
     K[Tests and CI] -. validate .-> G
 ```
 
-The synthetic replay fixtures will be used in isolated test runs, not blended into reports of public data. See [the six-weekend plan](docs/roadmap.md), [architecture decisions](docs/architecture.md), and [source contract](docs/data_contract.md).
+The synthetic replay fixtures will be used in isolated test runs, not blended into reports of public data. See [the six-weekend plan](docs/roadmap.md), [Git workflow](docs/git-workflow.md), [architecture decisions](docs/architecture.md), and [source contract](docs/data_contract.md).
 
 ## Run the synthetic fixture generator
 

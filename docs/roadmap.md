@@ -1,6 +1,6 @@
 # Six-weekend implementation plan
 
-Each milestone is committed separately and pushed to GitHub after its checks pass. Time estimate: approximately 10–15 hours per weekend; adjust the amount of data and dashboard detail to fit.
+Each future milestone is developed on its own branch and merged into `main` through a pull request after its checks pass. See the [Git workflow](git-workflow.md). Time estimate: approximately 10–15 hours per weekend; adjust the amount of data and dashboard detail to fit.
 
 | Weekend | Work | Done when | Suggested commit |
 |---|---|---|---|
