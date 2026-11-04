@@ -1,0 +1,23 @@
+name: telecom_activity
+version: '1.0.0'
+config-version: 2
+profile: telecom_activity
+
+model-paths: [models]
+test-paths: [tests]
+macro-paths: [macros]
+target-path: target
+clean-targets: [target, dbt_packages]
+
+models:
+  telecom_activity:
+    staging:
+      +schema: staging
+      +materialized: view
+    intermediate:
+      +schema: intermediate
+      +materialized: view
+    marts:
+      core:
+        +schema: core
+        +materialized: table

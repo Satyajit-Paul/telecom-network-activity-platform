@@ -1,6 +1,6 @@
 # Telecom Network Activity Analytics Platform
 
-A six-weekend data engineering portfolio project that will transform historical telecom activity into reliable analytics for Power BI and Tableau. The current implementation loads synthetic test batches and a checksum-verified sample of the public dataset into a local PostgreSQL raw layer. dbt models, orchestration, and dashboards are planned.
+A six-weekend data engineering portfolio project that transforms historical telecom activity into a tested dimensional warehouse for future Power BI and Tableau reporting. The current implementation loads synthetic batches and a checksum-verified public-data sample into PostgreSQL, then builds staging models, dimensions, and a fact with dbt. Orchestration, analytics marts, and dashboards are planned.
 
 ## Business questions
 
@@ -30,7 +30,7 @@ flowchart LR
     K[Tests and CI] -. validate .-> G
 ```
 
-The synthetic replay fixtures will be used in isolated test runs, not blended into reports of public data. See [the six-weekend plan](docs/roadmap.md), [Git workflow](docs/git-workflow.md), [architecture decisions](docs/architecture.md), and [source contract](docs/data_contract.md).
+Synthetic and real records are identified by source in the warehouse; public-data reports must filter to `telecom_italia_milan`. See [the six-weekend plan](docs/roadmap.md), [Git workflow](docs/git-workflow.md), [architecture decisions](docs/architecture.md), [dimensional model](docs/data_model.md), and [source contract](docs/data_contract.md).
 
 ## Run the synthetic fixture generator
 
@@ -86,13 +86,31 @@ Download `sms-call-internet-mi-2013-11-01.txt` from [Harvard Dataverse](https://
 
 Set the PostgreSQL environment variables from the preceding section first. Source files, samples, and their provenance files are ignored by Git. Do not publish a dataset-derived file without applying the dataset terms.
 
+## Build and test the dbt warehouse
+
+Install the pinned dbt dependencies in the project's Python environment. Set the PostgreSQL environment variables as shown above and ingest the synthetic batches before building; ingest the real-data sample as well to run the optional warehouse integration tests.
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-dbt.txt
+.\.venv\Scripts\dbt.exe debug --project-dir dbt --profiles-dir dbt
+.\.venv\Scripts\dbt.exe build --project-dir dbt --profiles-dir dbt
+.\.venv\Scripts\dbt.exe docs generate --project-dir dbt --profiles-dir dbt
+
+# Test with the documented synthetic and real-data samples loaded.
+$env:RUN_DB_TESTS = '1'
+$env:RUN_DBT_TESTS = '1'
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+By default dbt creates `telecom_staging`, `telecom_intermediate`, and `telecom_core` schemas. Credentials come from environment variables; no database password is committed. Filter `telecom_core.fct_grid_activity` by `source_system = 'telecom_italia_milan'` for public-data analysis. See the [data model](docs/data_model.md) for grain, deduplication, UTC, null handling, and key decisions. The models rebuild fully for now; incremental loading is a later stage.
+
 ## Milestone status
 
 | Stage | Status |
 |---|---|
 | 1. Scope, source design, and synthetic fixtures | Complete; public-source terms and file inspection pending |
 | 2. Ingestion and PostgreSQL raw layer | Complete for a 50,000-row real-data sample and synthetic replay tests |
-| 3. dbt staging and dimensional models | Planned |
+| 3. dbt staging and dimensional models | Complete |
 | 4. Incremental loading, marts, and Airflow | Planned |
 | 5. Power BI and Tableau | Planned |
 | 6. CI and portfolio documentation | Planned |

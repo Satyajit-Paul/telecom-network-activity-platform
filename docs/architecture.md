@@ -13,11 +13,11 @@ Analyze historical telecommunications activity by geographic grid and 10-minute 
 5. Tests and reconciliation checks decide whether data is ready for Power BI and Tableau.
 6. Airflow orchestrates the jobs and reports failures. GitHub Actions checks changes against small synthetic fixtures.
 
-## Initial model design
+## Model design
 
-The candidate fact grain is one row per grid square, 10-minute interval, and country code. This is a design assumption that must be validated against a downloaded file before it is enforced. Planned dimensions are date, grid, and country code. The country code denotes the telecommunications context described by the source; it is not the physical location of the grid.
+The fact grain is one row per source system, grid square, 10-minute interval, and country code. The first 50,000 public-data rows have no duplicate key at that grain; this does not prove uniqueness for the complete dataset. Dimensions are date, grid, and country code. The country code denotes the telecommunications context described by the source; it is not the physical location of the grid.
 
-Measures will keep their source meaning and provenance. A separate data source identifier will distinguish public records from synthetic records; synthetic fixtures are used in isolated runs. The grid geometry reference will only be included once its access terms and join keys have been checked.
+Measures retain their source meaning and provenance. Synthetic and public records coexist in the local test warehouse and are identified by `source_system`; public-data queries must explicitly filter to `telecom_italia_milan`. The grid geometry reference will only be included once its access terms and join keys have been checked.
 
 ## Local constraints
 
