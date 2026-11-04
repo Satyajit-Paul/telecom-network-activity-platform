@@ -1,0 +1,34 @@
+version: 2
+
+sources:
+  - name: telecom_raw
+    schema: raw
+    description: Immutable raw records and load metadata created by the Python ingestion process.
+    tables:
+      - name: ingestion_batches
+        description: One record per source and content checksum, including load outcome and counts.
+        columns:
+          - name: batch_id
+            data_tests: [not_null, unique]
+          - name: source_system
+            data_tests: [not_null]
+          - name: status
+            data_tests:
+              - not_null
+              - accepted_values:
+                  arguments:
+                    values: [processing, succeeded, failed]
+      - name: activity_records
+        description: Valid source rows retained as arrays of original strings, including duplicates and corrections.
+        columns:
+          - name: batch_id
+            data_tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: source('telecom_raw', 'ingestion_batches')
+                    field: batch_id
+          - name: line_number
+            data_tests: [not_null]
+          - name: source_fields
+            data_tests: [not_null]

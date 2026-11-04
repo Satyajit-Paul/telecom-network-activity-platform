@@ -8,5 +8,6 @@ data/raw/
 logs/
 target/
 dbt_packages/
+.user.yml
 *.hyper
 

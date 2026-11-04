@@ -1,0 +1,12 @@
+telecom_activity:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('PGHOST', '127.0.0.1') }}"
+      port: "{{ env_var('PGPORT', '5432') | int }}"
+      user: "{{ env_var('PGUSER', 'telecom') }}"
+      password: "{{ env_var('PGPASSWORD') }}"
+      dbname: "{{ env_var('PGDATABASE', 'telecom_warehouse') }}"
+      schema: "{{ env_var('DBT_SCHEMA', 'telecom') }}"
+      threads: 2

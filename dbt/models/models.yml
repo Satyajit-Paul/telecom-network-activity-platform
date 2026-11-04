@@ -1,0 +1,114 @@
+version: 2
+
+models:
+  - name: stg_telecom__activity
+    description: Typed successful raw records; blank activity fields remain null and all source versions remain present.
+    columns:
+      - name: source_system
+        data_tests: [not_null]
+      - name: batch_id
+        data_tests: [not_null]
+      - name: line_number
+        data_tests: [not_null]
+      - name: square_id
+        data_tests: [not_null]
+      - name: interval_start_ms
+        data_tests: [not_null]
+      - name: interval_start_utc
+        data_tests: [not_null]
+      - name: country_code
+        data_tests: [not_null]
+  - name: int_telecom__activity_latest
+    description: Latest version per source, square, interval, and country code; ties resolve by batch ID then line number.
+    columns:
+      - name: source_system
+        data_tests: [not_null]
+      - name: square_id
+        data_tests: [not_null]
+      - name: interval_start_ms
+        data_tests: [not_null]
+      - name: country_code
+        data_tests: [not_null]
+  - name: dim_date
+    description: One row per UTC calendar date from the earliest to latest accepted activity interval.
+    columns:
+      - name: date_key
+        description: YYYYMMDD integer for a UTC calendar date.
+        data_tests: [not_null, unique]
+      - name: full_date
+        data_tests: [not_null, unique]
+  - name: dim_grid
+    description: One row per source system and geographic grid square; a grid is not a physical network cell.
+    columns:
+      - name: grid_key
+        description: Deterministic surrogate key for source system and square ID.
+        data_tests: [not_null, unique]
+      - name: source_system
+        data_tests: [not_null]
+      - name: square_id
+        data_tests: [not_null]
+  - name: dim_country
+    description: One row per source country-code value. Values are not automatically mapped to country names.
+    columns:
+      - name: country_key
+        description: Deterministic surrogate key for the source country code.
+        data_tests: [not_null, unique]
+      - name: country_code
+        data_tests: [not_null, unique]
+  - name: fct_grid_activity
+    description: One row per source system, geographic square, 10-minute interval, and country code after deduplication.
+    columns:
+      - name: activity_key
+        description: Deterministic surrogate key for the fact grain.
+        data_tests: [not_null, unique]
+      - name: grid_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_grid')
+                field: grid_key
+      - name: country_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_country')
+                field: country_key
+      - name: date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: source_system
+        description: Identifies synthetic data or the public Telecom Italia source.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [synthetic, telecom_italia_milan]
+      - name: interval_start_ms
+        data_tests: [not_null]
+      - name: interval_start_utc
+        data_tests: [not_null]
+      - name: source_batch_id
+        data_tests: [not_null]
+      - name: source_line_number
+        data_tests: [not_null]
+      - name: sms_in
+        description: Proportional incoming SMS activity; null when the source field is blank.
+        data_tests: [non_negative]
+      - name: sms_out
+        description: Proportional outgoing SMS activity; null when the source field is blank.
+        data_tests: [non_negative]
+      - name: call_in
+        description: Proportional incoming call activity; null when the source field is blank.
+        data_tests: [non_negative]
+      - name: call_out
+        description: Proportional outgoing call activity; null when the source field is blank.
+        data_tests: [non_negative]
+      - name: internet_activity
+        description: Internet activity measure, not gigabytes; null when the source field is blank.
+        data_tests: [non_negative]
