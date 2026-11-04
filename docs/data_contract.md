@@ -23,3 +23,5 @@ The generator writes headerless tab-separated batches using the assumed column o
 
 The fixture represents delivery order by file, not a real source update timestamp. The ingestion design must supply batch metadata and a deterministic conflict-resolution rule. Tests must process these fixtures separately from public data.
 
+The current loader preserves valid source fields as JSON arrays and puts invalid rows in `raw.rejected_records` with their reason and line number. It keeps blank measures unchanged. Batch SHA-256 and source system form the replay identity; repeated file bytes for the same source are skipped. Duplicate business keys and corrections are deliberately retained in raw and will be resolved downstream. Structural CSV parsing failures roll back the batch rather than accepting partial data.
+
