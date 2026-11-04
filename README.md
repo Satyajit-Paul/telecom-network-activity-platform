@@ -1,6 +1,6 @@
 # Telecom Network Activity Analytics Platform
 
-A six-weekend data engineering portfolio project that will transform historical telecom activity into reliable analytics for Power BI and Tableau. The current implementation generates synthetic test batches and loads them into a local PostgreSQL raw layer. dbt models, orchestration, and dashboards are planned.
+A six-weekend data engineering portfolio project that will transform historical telecom activity into reliable analytics for Power BI and Tableau. The current implementation loads synthetic test batches and a checksum-verified sample of the public dataset into a local PostgreSQL raw layer. dbt models, orchestration, and dashboards are planned.
 
 ## Business questions
 
@@ -11,7 +11,7 @@ A six-weekend data engineering portfolio project that will transform historical 
 
 The planned public source is the [Telecom Italia Milan dataset](https://doi.org/10.7910/DVN/EGZHFV). Its records describe historical activity from 2013, aggregated over geographic grid squares and time intervals. The [dataset publication](https://www.nature.com/articles/sdata201555) describes activity values as proportional measures: do not label them as gigabytes, subscriber counts, physical cell KPIs, or current operational measurements.
 
-**Data access:** The Dataverse entry lists custom terms. Review the dataset and grid-reference terms before downloading, redistributing, or publishing extracts. No public-source data is included in this repository. The synthetic fixtures below contain invented values and are not public-source observations.
+**Data access:** The dataset's custom terms identify the [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/) and require attribution, including [from BigDataChallenge contest](https://theodi.fbk.eu/openbigdata/). Review the dataset and grid-reference terms when sharing derived data or dashboards. Harvard Dataverse requires a guestbook response to download the original file. No public-source data is included in this repository. The synthetic fixtures below contain invented values and are not public-source observations.
 
 ## Planned architecture
 
@@ -75,12 +75,23 @@ If you change the database name, user, or host port in `.env`, use matching `PGD
 
 Ingestion hashes each file, logs batch counts, and stores accepted fields and rejects separately. Replaying the same bytes for the same source returns `already_loaded`. Accepted duplicates and corrections remain in raw data for the later dbt deduplication step. A malformed CSV stream rolls the batch back and records a failure when the database is available. Blank measures remain blank pending confirmation of the public-source semantics.
 
+### Ingest a real-data sample
+
+Download `sms-call-internet-mi-2013-11-01.txt` from [Harvard Dataverse](https://doi.org/10.7910/DVN/EGZHFV) after completing its guestbook, and place it in `data/raw/`. The original is about 308 MiB. The command below verifies the publisher's MD5 against the **entire original file**, records source and sample SHA-256 values in an ignored provenance file, and takes the first 50,000 lines. This convenience sample is ordered and is **not representative** of the whole dataset.
+
+```powershell
+.\.venv\Scripts\python.exe scripts/create_sample.py data/raw/sms-call-internet-mi-2013-11-01.txt data/raw/milan-2013-11-01-first-50000.tsv --expected-md5 658c49f8e3c7910bd3bb2bafbf62cdce --rows 50000
+.\.venv\Scripts\python.exe -m ingestion.load_activity data/raw/milan-2013-11-01-first-50000.tsv --source-system telecom_italia_milan
+```
+
+Set the PostgreSQL environment variables from the preceding section first. Source files, samples, and their provenance files are ignored by Git. Do not publish a dataset-derived file without applying the dataset terms.
+
 ## Milestone status
 
 | Stage | Status |
 |---|---|
 | 1. Scope, source design, and synthetic fixtures | Complete; public-source terms and file inspection pending |
-| 2. Ingestion and PostgreSQL raw layer | Synthetic batch ingestion implemented; public source inspection pending |
+| 2. Ingestion and PostgreSQL raw layer | Complete for a 50,000-row real-data sample and synthetic replay tests |
 | 3. dbt staging and dimensional models | Planned |
 | 4. Incremental loading, marts, and Airflow | Planned |
 | 5. Power BI and Tableau | Planned |

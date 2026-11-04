@@ -6,6 +6,7 @@ import tempfile
 import unittest
 import uuid
 from pathlib import Path
+from unittest.mock import patch
 
 import psycopg2
 
@@ -55,6 +56,29 @@ class IngestionDatabaseTests(unittest.TestCase):
             self.assertEqual(cur.fetchone()[0], 20)
             cur.execute("SELECT count(*) FROM raw.rejected_records r JOIN raw.ingestion_batches b USING (batch_id) WHERE b.source_system = %s", (self.source,))
             self.assertEqual(cur.fetchone()[0], 4)
+
+    def test_failed_batch_retries_without_partial_records(self):
+        path = self.root / "baseline.tsv"
+        with patch("ingestion.load_activity.execute_batch", side_effect=RuntimeError("simulated failure")):
+            with self.assertRaises(RuntimeError):
+                load_batch(path, self.source, batch_size=2)
+        with psycopg2.connect() as conn, conn.cursor() as cur:
+            cur.execute("SELECT batch_id, status FROM raw.ingestion_batches WHERE source_system = %s", (self.source,))
+            failed_id, status = cur.fetchone()
+            self.assertEqual(status, "failed")
+            cur.execute("SELECT count(*) FROM raw.activity_records WHERE batch_id = %s", (failed_id,))
+            self.assertEqual(cur.fetchone()[0], 0)
+        retried = load_batch(path, self.source, batch_size=2)
+        self.assertEqual(retried["batch_id"], failed_id)
+        self.assertEqual((retried["status"], retried["accepted"], retried["rejected"]), ("succeeded", 18, 4))
+
+    def test_blank_activity_fields_are_preserved(self):
+        path = self.root / "blank.tsv"
+        path.write_text("101\t1383264000000\t0\t\t\t1\t\t2\n", encoding="utf-8")
+        batch = load_batch(path, self.source)
+        with psycopg2.connect() as conn, conn.cursor() as cur:
+            cur.execute("SELECT source_fields FROM raw.activity_records WHERE batch_id = %s", (batch["batch_id"],))
+            self.assertEqual(cur.fetchone()[0], ["101", "1383264000000", "0", "", "", "1", "", "2"])
 
 
 if __name__ == "__main__":
